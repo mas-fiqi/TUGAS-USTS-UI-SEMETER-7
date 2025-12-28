@@ -1,62 +1,75 @@
 import 'package:flutter/material.dart';
+import '../../services/attendance_service.dart';
+import '../../utils/user_session.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Dummy Data
-    // TODO: Replace with Real Data from Backend
-    // 1. Call AttendanceService.getHistory()
-    // 2. Use FutureBuilder or StreamBuilder to handle async data
-    // 3. Map JSON response to List<Map> or Models
-    final List<Map<String, String>> historyData = [
-      {'date': 'Jumat, 27 Des 2024', 'time': '07:05', 'status': 'Hadir'},
-      {'date': 'Kamis, 26 Des 2024', 'time': '07:00', 'status': 'Hadir'},
-      {'date': 'Rabu, 25 Des 2024', 'time': '-', 'status': 'Hari Libur'},
-      {'date': 'Selasa, 24 Des 2024', 'time': '07:15', 'status': 'Terlambat'},
-      {'date': 'Senin, 23 Des 2024', 'time': '07:02', 'status': 'Hadir'},
-      {'date': 'Jumat, 20 Des 2024', 'time': '-', 'status': 'Ditolak'},
-    ];
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
 
+class _HistoryScreenState extends State<HistoryScreen> {
+  final _attendanceService = AttendanceService();
+  List<Map<String, dynamic>> _historyData = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHistory();
+  }
+
+  Future<void> _fetchHistory() async {
+    final session = UserSession();
+    List<Map<String, dynamic>> data;
+    
+    if (session.role == 'lecturer') {
+      data = await _attendanceService.getLecturerHistory();
+    } else {
+      data = await _attendanceService.getAttendanceHistory(session.nim);
+    }
+
+    if (mounted) {
+      setState(() {
+        _historyData = data;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Riwayat Absensi')),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: ListView.builder(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: historyData.length,
+        itemCount: _historyData.length,
         itemBuilder: (context, index) {
-          final data = historyData[index];
+          final data = _historyData[index];
           final Color statusColor;
           
           switch (data['status']) {
             case 'Hadir':
-              statusColor = Theme.of(context).colorScheme.primary; // Or explicit green if semantic
+              statusColor = Colors.green[700]!;
               break;
             case 'Terlambat':
-              statusColor = Theme.of(context).colorScheme.secondary; // Or Orange
+              statusColor = Colors.orange[800]!;
               break;
             case 'Ditolak':
               statusColor = Theme.of(context).colorScheme.error;
               break;
+            case 'Selesai':
+              statusColor = Colors.blue[700]!;
+              break;
+            case 'Dihapus':
+               statusColor = Colors.grey[700]!;
+               break;
             default:
               statusColor = Colors.grey;
-          }
-
-          // Use static colors for semantic status for better UX (Traffic light)
-          final Color semanticColor;
-           switch (data['status']) {
-            case 'Hadir':
-              semanticColor = Colors.green[700]!;
-              break;
-            case 'Terlambat':
-              semanticColor = Colors.orange[800]!;
-              break;
-            case 'Ditolak':
-              semanticColor = Theme.of(context).colorScheme.error;
-              break;
-            default:
-              semanticColor = Colors.grey;
           }
 
           return Card(
@@ -65,47 +78,64 @@ class HistoryScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                   // Header: Tanggal & Status
+                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         data['date']!,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Jam Masuk: ${data['time']}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: statusColor.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          data['status']!,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: semanticColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: semanticColor),
-                    ),
-                    child: Text(
-                      data['status']!,
-                      style: TextStyle(
-                        color: semanticColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
+                   ),
+                   const Divider(height: 24),
+                   
+                   // Details Grid
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       _buildInfoColumn('Jam', data['time']!),
+                       _buildInfoColumn('Kelas', data['class_name'] ?? '-'),
+                       _buildInfoColumn('Mapel', data['subject'] ?? '-'),
+                     ],
+                   )
                 ],
               ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildInfoColumn(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      ],
     );
   }
 }

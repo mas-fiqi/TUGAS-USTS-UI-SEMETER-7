@@ -18,184 +18,91 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(_isLecturer ? 'Dashboard Dosen' : 'Smart Presence'),
-        backgroundColor: _isLecturer ? Colors.orange : Theme.of(context).primaryColor,
-        elevation: 0,
-        actions: [
-          Switch(
-            value: _isLecturer,
-            activeColor: Colors.white,
-            activeTrackColor: Colors.orangeAccent,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: Colors.blueAccent,
-            onChanged: (val) {
-              setState(() {
-                _isLecturer = val;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Mode: ${val ? "Dosen" : "Siswa"}')),
-              );
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header User Info
-            Container(
-              padding: const EdgeInsets.all(24.0),
-              decoration: BoxDecoration(
-                color: _isLecturer ? Colors.orange : Theme.of(context).primaryColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
+      // AppBar only for Lecturer or if needed. StudentDashboard has its own header.
+      appBar: _isLecturer 
+        ? AppBar(
+            title: const Text('Dashboard Dosen'),
+            backgroundColor: Colors.orange,
+            elevation: 0,
+            actions: [
+               _buildRoleSwitch(),
+               const SizedBox(width: 16),
+            ],
+          )
+        : null, // No AppBar for Student (Uses Custom Header)
+      
+      // Floating Action Button for Role Switch in Student Mode (Optional, or keep in custom header)
+      // For now, let's keep the switch accessible. 
+      // Since Student Header has a notification icon, maybe we can overlay the switch or put it there?
+      // Let's rely on a temporary invisible way or just add a small floating button if AppBar is gone.
+      // actually, let's keep a minimal SafeArea wrapper.
+      
+      body: _isLecturer
+          ? Column(
+              children: [
+                // Lecturer Header Info
+                Container(
+                   padding: const EdgeInsets.all(24.0),
+                   decoration: const BoxDecoration(
+                     color: Colors.orange,
+                     borderRadius: BorderRadius.only(
+                       bottomLeft: Radius.circular(24),
+                       bottomRight: Radius.circular(24),
+                     ),
+                   ),
+                   child: Row(
+                     children: [
+                       const CircleAvatar(
+                         radius: 30,
+                         backgroundColor: Colors.white,
+                         child: Icon(Icons.person, size: 30, color: Colors.orange),
+                       ),
+                       const SizedBox(width: 16),
+                       Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: const [
+                           Text('Halo, Pak Dosen', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                           SizedBox(height: 4),
+                           Text('NIP. 19850101', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                         ],
+                       ),
+                     ],
+                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person,
-                        size: 30,
-                        color: _isLecturer
-                            ? Colors.orange
-                            : Theme.of(context).primaryColor),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _isLecturer 
-                          ? 'Halo, Pak Dosen' 
-                          : 'Halo, ${UserSession().name}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _isLecturer 
-                          ? 'NIP. 19850101' 
-                          : UserSession().className.isNotEmpty ? UserSession().className : 'Kelas XII RPL 1',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                Expanded(child: const LecturerDashboardWidget()),
+              ],
+            )
+          : Stack(
+              children: [
+                // Student Dashboard takes full screen
+                StudentDashboardWidget(studentId: UserSession().nim),
+                
+                // Overlay Role Switcher (Temporary for testing)
+                Positioned(
+                  top: 50,
+                  right: 24+48, // Next to notification
+                  child: _buildRoleSwitch(),
+                )
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // DASHBOARD CONTENT (Dynamic)
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                     // 1. Dashboard Widget (Report / Create Session)
-                    _isLecturer
-                        ? const LecturerDashboardWidget()
-                        : StudentDashboardWidget(studentId: UserSession().nim),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // 2. Menu Grid (Hanya relevan untuk Siswa biasanya, atau menu tambahan Dosen)
-                    if (!_isLecturer) ...[
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text("Menu Utama", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ),
-                      const SizedBox(height: 16),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        children: [
-                          _buildMenuCard(
-                            context,
-                            icon: Icons.camera_alt,
-                            label: 'Absensi',
-                            color: Theme.of(context).primaryColor,
-                            route: '/attendance',
-                          ),
-                          _buildMenuCard(
-                            context,
-                            icon: Icons.history,
-                            label: 'Riwayat',
-                            color: Theme.of(context).colorScheme.secondary,
-                            route: '/history',
-                          ),
-                          _buildMenuCard(
-                            context,
-                            icon: Icons.person,
-                            label: 'Profil',
-                            color: Colors.green,
-                            route: '/profile',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildMenuCard(BuildContext context,
-      {required IconData icon,
-      required String label,
-      required Color color,
-      required String route}) {
-    return Material(
-      color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(context, route);
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildRoleSwitch() {
+    return Switch(
+      value: _isLecturer,
+      activeColor: Colors.white,
+      activeTrackColor: Colors.orangeAccent,
+      inactiveThumbColor: Colors.white, // Blue theme
+      inactiveTrackColor: Colors.blue.shade200,
+      onChanged: (val) {
+        setState(() {
+          _isLecturer = val;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Mode: ${val ? "Dosen" : "Siswa"}')),
+        );
+      },
     );
   }
 }

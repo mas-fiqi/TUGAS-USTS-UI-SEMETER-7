@@ -32,7 +32,12 @@ class UserSession {
     _classId = classId;
     _className = className;
     _isLoggedIn = true;
+    _role = 'student';
   }
+
+  String? _role;
+  String get role => _role ?? 'student';
+  set role(String val) => _role = val;
 
   void clearSession() {
     _nim = null;
@@ -40,5 +45,6 @@ class UserSession {
     _classId = null;
     _className = null;
     _isLoggedIn = false;
+    _role = null;
   }
 }

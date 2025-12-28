@@ -27,9 +27,21 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   String get _classId => UserSession().classId; 
 
   @override
-  void initState() {
-    super.initState();
-    _checkActiveSession();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cek Arguments dari Dashboard
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is Map<String, dynamic> && _activeSession == null) {
+      // Gunakan data dari dashboard
+      setState(() {
+        _activeSession = args;
+        _isCheckingSession = false;
+        _statusMessage = null;
+      });
+    } else if (_activeSession == null) {
+       // Fallback fetch manual jika tidak ada arguments
+      _checkActiveSession();
+    }
   }
 
   Future<void> _checkActiveSession() async {

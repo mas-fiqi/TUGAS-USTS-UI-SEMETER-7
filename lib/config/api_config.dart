@@ -11,7 +11,7 @@ class ApiConfig {
   // Gunakan ini jika running di HP asli. PENTING:
   // 1. HP dan Laptop wajib di WiFi yang sama.
   // 2. Ganti IP di bawah dengan IP Laptop Anda (cek cmd -> ipconfig).
-  static const String baseUrl = "http://192.168.100.200:8000"; 
+  static const String baseUrl = "http://192.168.0.100:8000"; 
   
   // =======================================================================
   

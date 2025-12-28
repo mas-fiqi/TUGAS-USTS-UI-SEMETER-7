@@ -57,7 +57,14 @@ class ProfileScreen extends StatelessWidget {
                     value: 'XII RPL 1',
                   ),
                   const Divider(),
-                   _buildProfileItem(
+                  _buildProfileItem(
+                     context,
+                     icon: Icons.school_outlined,
+                     label: 'Sekolah',
+                     value: 'SMK Telkom Malang',
+                  ),
+                   const Divider(),
+                  _buildProfileItem(
                     context,
                     icon: Icons.email_outlined,
                     label: 'Email',

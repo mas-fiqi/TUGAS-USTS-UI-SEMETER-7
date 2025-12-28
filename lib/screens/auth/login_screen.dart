@@ -41,6 +41,14 @@ class _LoginScreenState extends State<LoginScreen> {
           classId: (user['class_id'] ?? 1).toString(), // Default 1 jika null
           className: 'Kelas Siswa', // Idealnya dari API, sementara placeholder
         );
+        
+        // Cek Role (Mock Logic sementara API belum return role)
+        // Lecturer usually uses NIP instead of NIM or special ID like 1985*
+        if (user['nim'] == '19850101' || (user['nim']?.length ?? 0) < 10) { 
+           UserSession().role = 'lecturer';
+        } else {
+           UserSession().role = 'student';
+        }
 
         // Login Berhasil
         ScaffoldMessenger.of(context).showSnackBar(

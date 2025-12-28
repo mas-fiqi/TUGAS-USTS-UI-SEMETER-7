@@ -36,19 +36,48 @@ class ReportService {
   }
 
   // Create Session (Lecturer Action) - Placing here or AttendanceService is fine
-  Future<bool> createSession(Map<String, dynamic> sessionData) async {
+  // Create Session (Lecturer Action)
+  Future<Map<String, dynamic>> createSession(Map<String, dynamic> sessionData) async {
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/attendance/sessions/');
+      final url = Uri.parse('${ApiConfig.baseUrl}/attendance/sessions/'); 
+      print("Creating session at $url with body: $sessionData");
+
       final response = await http.post(
         url,
-        headers: ApiConfig.headers, // Ensure Content-Type: application/json
+        headers: ApiConfig.headers,
         body: json.encode(sessionData),
       ).timeout(ApiConfig.connectionTimeout);
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      print("Create Session Response: ${response.statusCode} ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'message': 'Sesi berhasil dibuat'};
+      } else {
+        return {'success': false, 'message': 'Server Error: ${response.statusCode} - ${response.body}'};
+      }
     } catch (e) {
       print("Error creating session: $e");
-      return false;
+      return {'success': false, 'message': 'Connection Error: $e'};
+    }
+  }
+
+
+  // Delete Session (Lecturer Action)
+  Future<Map<String, dynamic>> deleteSession(int sessionId) async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/attendance/sessions/$sessionId'); 
+      final response = await http.delete(
+        url,
+        headers: ApiConfig.headers,
+      ).timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {'success': true, 'message': 'Sesi berhasil dihapus'};
+      } else {
+        return {'success': false, 'message': 'Gagal menghapus: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
     }
   }
 }
