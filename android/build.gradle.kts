@@ -1,3 +1,7 @@
+// Define kotlin_version for plugins that rely on it
+val kotlinVersion = "1.9.20"
+extra["kotlin_version"] = kotlinVersion
+
 allprojects {
     repositories {
         google()
